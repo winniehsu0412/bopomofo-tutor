@@ -631,11 +631,17 @@ elif page == "📝 小測驗（選擇題）":
     )
 
     # 選擇題
+    # 說明（分行）
+    st.write("它的日文羅馬字近似是？")
+    st.write("その日本語ローマ字の近い音はどれですか？")
+
+    # 選項的標題留空，這樣最乾淨
     answer = st.radio(
-        "它的日文羅馬字近似是？\nその日本語ローマ字の近い音はどれですか？",
+        "",
         state["options"],
         key=f"quiz_radio_{state['symbol']}",
     )
+
 
     # 按鈕（送出＋下一題）
     col1, col2 = st.columns(2)
