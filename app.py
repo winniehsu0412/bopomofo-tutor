@@ -561,7 +561,11 @@ elif page == "📋 注音符號總覽":
         ]
     )
 
+    # ⭐ index 從 0 改成 1 開始
+    df.index = df.index + 1
+
     st.dataframe(df, use_container_width=True)
+
 
 
 # ========= 頁面 4：小測驗（選擇題） ========= #
