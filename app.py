@@ -540,12 +540,15 @@ elif page == "🔤 注音學習卡片":
 # ========= 頁面 3：注音符號總覽 ========= #
 
 elif page == "📋 注音符號總覽":
-    st.title("📋 注音符號總覽 / 一覧")
+    st.title("📋 注音符號總覽 / ボポモフォ一覧")
 
     st.markdown(
         """
 這裡整理了注音符號的基本資訊（符號、類別、IPA、日文羅馬字提示）。  
 可用於課堂展示或作為教材附錄。
+
+ここでは、注音符号の基本情報（記号・カテゴリー・IPA・日本語ローマ字のヒント）をまとめています。
+授業での提示や教材付録としてご利用いただけます。
 """
     )
 
@@ -571,7 +574,7 @@ elif page == "📋 注音符號總覽":
 # ========= 頁面 4：小測驗（選擇題） ========= #
 
 elif page == "📝 小測驗（選擇題）":
-    st.title("📝 小測驗：注音 × 日文羅馬字")
+    st.title("📝 小測驗：注音 × 日文羅馬字" / ミニクイズ：注音 × 日本語ローマ字)
 
     st.markdown(
         """
@@ -580,6 +583,12 @@ elif page == "📝 小測驗（選擇題）":
 
 ✅ 只有按「送出答案」才會判分  
 ✅ 只有按「下一題」才會換題，不會自己亂跳題
+
+システムが注音データからランダムに1つの記号を選びます。
+最も近い日本語ローマ字の説明を選んでください。
+
+✅ 「回答を送信」を押したときにだけ採点されます
+✅ 「次の問題」を押したときにだけ次の問題に進みます。自動で切り替わることはありません
 """
     )
 
@@ -611,13 +620,17 @@ elif page == "📝 小測驗（選擇題）":
     state = st.session_state.quiz_state
     q_data = BOPOMOFO_DATA[state["q_index"]]
 
-    st.subheader(f"題目：這個注音符號是 **{q_data['symbol']}**")
+    st.subheader(
+    f"題目：這個注音符號是 **{q_data['symbol']}**\n"
+    f"この注音符号は「{q_data['symbol']}」です。"
+)
 
-    answer = st.radio(
-        "它的日文羅馬字近似是？",
-        state["options"],
-        key=f"quiz_radio_{state['question_id']}",
-    )
+answer = st.radio(
+    "它的日文羅馬字近似是？\nその日本語ローマ字の近い音はどれですか？",
+    state["options"],
+    key=f"quiz_radio_{state['question_id']}",
+)
+
 
     col1, col2 = st.columns(2)
     with col1:
