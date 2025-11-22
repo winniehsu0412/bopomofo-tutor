@@ -630,21 +630,12 @@ elif page == "📝 小測驗（選擇題）":
         f"題目：這個注音符號是 **{state['symbol']}**。 / この注音符号は「{state['symbol']}」です。"
     )
 
-    # 只有題目後面加空行
-    st.write("")
-
-    # 說明（中日文合併）
-    st.write("它的日文羅馬字近似是？ / その日本語ローマ字の近い音はどれですか？")
-
-    # 🔥 這裡不要加 st.write("") → 不然會出現空白  
-    # 選項會緊貼在說明下面
-
+    # 選擇題
     answer = st.radio(
-        "",
+        "它的日文羅馬字近似是？\nその日本語ローマ字の近い音はどれですか？",
         state["options"],
         key=f"quiz_radio_{state['symbol']}",
     )
-
 
     # 按鈕（送出＋下一題）
     col1, col2 = st.columns(2)
