@@ -574,25 +574,15 @@ elif page == "📋 注音符號總覽":
 # ========= 頁面 4：小測驗（選擇題） ========= #
 
 elif page == "📝 小測驗（選擇題）":
-    st.title("📝 小測驗：注音 × 日文羅馬字 / ミニクイズ：注音 × 日本語ローマ字")
 
-    st.markdown(
+    st.title(
         """
-系統會從注音資料中隨機挑一個符號，  
-請選出最接近的 **日文羅馬字說明**。  
-
-✅ 只有按「送出答案」才會判分  
-✅ 只有按「下一題」才會換題，不會自己亂跳題
-
-システムが注音データからランダムに1つの記号を選びます。
-最も近い日本語ローマ字の説明を選んでください。
-
-✅ 「回答を送信」を押したときにだけ採点されます
-✅ 「次の問題」を押したときにだけ次の問題に進みます。自動で切り替わることはありません
+📝 小測驗：注音 × 日文羅馬字  
+ミニクイズ：注音 × 日本語ローマ字
 """
     )
 
-    # 建立一題題目的函式（只在需要新題目時呼叫）
+    # ========= 建立 Quiz 狀態 ========= #
     def make_question():
         q = random.choice(BOPOMOFO_DATA)
         correct = q["jp_roma_hint"]
@@ -601,72 +591,72 @@ elif page == "📝 小測驗（選擇題）":
             d["jp_roma_hint"] for d in BOPOMOFO_DATA if d["symbol"] != q["symbol"]
         ]
         random.shuffle(distractors)
+
         options = [correct] + distractors[:3]
         random.shuffle(options)
 
         return {
-            "question_id": random.randint(1, 10_000_000),  # 換題時讓 radio 重置
-            "q_index": BOPOMOFO_DATA.index(q),
-            "options": options,
+            "symbol": q["symbol"],
             "correct": correct,
+            "options": options,
+            "q_data": q,
             "submitted": False,
             "answer": None,
         }
 
-    # 第一次進到小測驗頁時初始化
     if "quiz_state" not in st.session_state:
         st.session_state.quiz_state = make_question()
 
     state = st.session_state.quiz_state
-    q_data = BOPOMOFO_DATA[state["q_index"]]
 
-    st.subheader(
-    f"題目：這個注音符號是 **{q_data['symbol']}**\n"
-    f"この注音符号は「{q_data['symbol']}」です。"
-)
+    # 題目
+    st.subheader(f"題目：這個注音符號是 **{state['symbol']}**")
+    st.write(f"この注音符号は「{state['symbol']}」です。")
 
-answer = st.radio(
-    "它的日文羅馬字近似是？\nその日本語ローマ字の近い音はどれですか？",
-    state["options"],
-    key=f"quiz_radio_{state['question_id']}",
-)
+    # 選擇題
+    answer = st.radio(
+        "它的日文羅馬字近似是？\nその日本語ローマ字の近い音はどれですか？",
+        state["options"],
+        key=f"quiz_radio_{state['symbol']}",
+    )
 
-
+    # 按鈕（送出＋下一題）
     col1, col2 = st.columns(2)
     with col1:
         submit = st.button("✅ 送出答案 / 答えを送信")
     with col2:
         next_q = st.button("➡ 下一題 / 次の問題へ")
 
-    # 送出答案：只更新 state，不換題
+    # 送出答案：更新 state，不換題
     if submit:
         state["submitted"] = True
         state["answer"] = answer
 
-    # 下一題：重置題目並重新 rerun
+    # 換題
     if next_q:
         st.session_state.quiz_state = make_question()
         st.rerun()
 
-    # 判分與詳解
-    if state.get("submitted", False):
+    # 判定結果
+    if state["submitted"]:
         if state["answer"] == state["correct"]:
-            st.success("✅ 答對了！/ 正解です！")
+            st.success("🎉 正確！/ 正解です！")
         else:
-            st.error("❌ 這一題答錯了，再觀察一下符號和日文提示。/ ちょっと違います。もう一度考えてみましょう。")
+            st.error("❌ 再想想看 / もう一度考えてみてください")
 
-        with st.expander("查看詳細解說 / 詳しい解説を見る"):
+        with st.expander("📘 詳細解說 / 詳しい説明"):
+            q = state["q_data"]
             st.markdown(
                 f"""
-- 正確注音：**{q_data['symbol']}**  
-- 類別：`{q_data['category']}`  
-- IPA：`{q_data['ipa']}`  
-- 正確的日文羅馬字說明：`{q_data['jp_roma_hint']}`  
+- 注音：**{q['symbol']}**
+- 類別：{q['category']}
+- IPA：`{q['ipa']}`
+- 正確答案：`{q['jp_roma_hint']}`
 
-**中文說明**：{q_data['description_zh']}  
+**中文說明：**  
+{q['description_zh']}
 
-**日本語の説明**：{q_data['description_jp']}
+**日本語の説明：**  
+{q['description_jp']}
 """
             )
-    else:
-        st.info("選好答案之後，請先按「送出答案」，想換題再按「下一題」。")
