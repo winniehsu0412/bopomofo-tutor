@@ -471,30 +471,14 @@ if page == "📖 認識這個 AI 服務":
 目前這個 Streamlit 版本主要展示：
 
 - ✅ 結構化的注音教學資料（聲母、介音、韻母）  
-- ✅ 注音學習卡片（中文 + 日文說明）  
+- ✅ 注音學習卡片（中文 + 日本語說明）  
 - ✅ 注音符號總覽表  
 - ✅ 小測驗互動（從完整資料隨機出題）  
 
-在完整的 AI Service 設計中，將會加入：
-
-1. 🎙️ **語音錄製與辨識（ASR）**  
-   - 使用者對著麥克風念出注音或單詞  
-   - 系統利用語音辨識模型轉成文字或音標  
-
-2. 🧠 **LLM 發音診斷（AI 發音教練）**  
-   - 比對「目標發音」與「實際發音」  
-   - 由大型語言模型產出：  
-     - 發音分數（0–100）  
-     - 中文與日文的發音建議  
-     - 對日本學習者容易混淆的音（例：ㄓ vs ㄐ、ㄤ vs ㄢ）的說明  
-
-3. 📊 **學習紀錄與回饋**  
-   - 統計哪些注音最常被念錯  
-   - 區分台灣學生 / 日本學生的常見錯誤模式  
-   - 提供個人化練習建議
-
-> 目前你看到的這個網站，是整個 AI Service 的「互動介面原型（UI Prototype）」，  
-> 主要讓老師和同學了解：**服務結構、學習流程、與未來 AI 功能的整合方式**。
+未來可以再接上：
+- 🎙️ 語音錄製＋語音辨識（ASR）
+- 🧠 LLM 發音診斷（AI 發音教練）
+- 📊 學習紀錄與個人化回饋
 """
     )
 
@@ -506,9 +490,7 @@ if page == "📖 認識這個 AI 服務":
 2. 未來版本中，可錄音 → 後端送往語音辨識 → LLM 分析發音  
 3. 前端顯示 AI 回饋（中日雙語），並更新學習紀錄  
 
-這樣的設計，符合「AI service」常見架構：  
-
-> **前端互動介面 + 後端 API + 外部 AI 模型（語音 + LLM）**
+> 也就是：**前端互動介面 + 後端 API + 外部 AI 模型** 的典型 AI Service 架構。
 """
     )
 
@@ -530,9 +512,7 @@ elif page == "🔤 注音學習卡片":
             candidate_symbols = SYMBOL_LIST
         else:
             candidate_symbols = [
-                d["symbol"]
-                for d in BOPOMOFO_DATA
-                if d["category"] == category_filter
+                d["symbol"] for d in BOPOMOFO_DATA if d["category"] == category_filter
             ]
 
         selected_symbol = st.selectbox(
@@ -545,8 +525,8 @@ elif page == "🔤 注音學習卡片":
         st.markdown(
             f"""
 ### 注音符號：**{data['symbol']}**
-- 類別 / カテゴリ：`{data['category']}`
-- IPA：`{data['ipa']}`
+- 類別 / カテゴリ：`{data['category']}`  
+- IPA：`{data['ipa']}`  
 - 日文羅馬字近似：`{data['jp_roma_hint']}`
 """
         )
@@ -609,41 +589,82 @@ elif page == "📝 小測驗（選擇題）":
 系統會從注音資料中隨機挑一個符號，  
 請選出最接近的 **日文羅馬字說明**。  
 
-（示範題型之一，實作時可擴充為：看 IPA 選注音、看例詞選注音等等）
+✅ 只有按「送出答案」才會判分  
+✅ 只有按「下一題」才會換題，不會自己亂跳題
 """
     )
 
-    # 產生題目
-    question = random.choice(BOPOMOFO_DATA)
-    correct = question["jp_roma_hint"]
+    # 建立一題題目的函式（只在需要新題目時呼叫）
+    def make_question():
+        q = random.choice(BOPOMOFO_DATA)
+        correct = q["jp_roma_hint"]
 
-    # 挑干擾選項
-    distractors = [
-        d["jp_roma_hint"] for d in BOPOMOFO_DATA if d["symbol"] != question["symbol"]
-    ]
-    random.shuffle(distractors)
-    options = [correct] + distractors[:3]
-    random.shuffle(options)
+        distractors = [
+            d["jp_roma_hint"] for d in BOPOMOFO_DATA if d["symbol"] != q["symbol"]
+        ]
+        random.shuffle(distractors)
+        options = [correct] + distractors[:3]
+        random.shuffle(options)
 
-    st.subheader(f"題目：這個注音符號是 **{question['symbol']}**")
-    answer = st.radio("它的日文羅馬字近似是？", options)
+        return {
+            "question_id": random.randint(1, 10_000_000),  # 換題時讓 radio 重置
+            "q_index": BOPOMOFO_DATA.index(q),
+            "options": options,
+            "correct": correct,
+            "submitted": False,
+            "answer": None,
+        }
 
-    if st.button("送出答案 / 答えを送信"):
-        if answer == correct:
+    # 第一次進到小測驗頁時初始化
+    if "quiz_state" not in st.session_state:
+        st.session_state.quiz_state = make_question()
+
+    state = st.session_state.quiz_state
+    q_data = BOPOMOFO_DATA[state["q_index"]]
+
+    st.subheader(f"題目：這個注音符號是 **{q_data['symbol']}**")
+
+    answer = st.radio(
+        "它的日文羅馬字近似是？",
+        state["options"],
+        key=f"quiz_radio_{state['question_id']}",
+    )
+
+    col1, col2 = st.columns(2)
+    with col1:
+        submit = st.button("✅ 送出答案 / 答えを送信")
+    with col2:
+        next_q = st.button("➡ 下一題 / 次の問題へ")
+
+    # 送出答案：只更新 state，不換題
+    if submit:
+        state["submitted"] = True
+        state["answer"] = answer
+
+    # 下一題：重置題目並重新 rerun
+    if next_q:
+        st.session_state.quiz_state = make_question()
+        st.experimental_rerun()
+
+    # 判分與詳解
+    if state.get("submitted", False):
+        if state["answer"] == state["correct"]:
             st.success("✅ 答對了！/ 正解です！")
         else:
-            st.error("❌ 先試著再想想看。/ もう一度考えてみましょう。")
+            st.error("❌ 這一題答錯了，再觀察一下符號和日文提示。/ ちょっと違います。もう一度考えてみましょう。")
 
         with st.expander("查看詳細解說 / 詳しい解説を見る"):
             st.markdown(
                 f"""
-- 正確注音：**{question['symbol']}**
-- 類別：`{question['category']}`
-- IPA：`{question['ipa']}`
-- 正確的日文羅馬字說明：`{question['jp_roma_hint']}`  
+- 正確注音：**{q_data['symbol']}**  
+- 類別：`{q_data['category']}`  
+- IPA：`{q_data['ipa']}`  
+- 正確的日文羅馬字說明：`{q_data['jp_roma_hint']}`  
 
-**中文說明**：{question['description_zh']}  
+**中文說明**：{q_data['description_zh']}  
 
-**日本語の説明**：{question['description_jp']}
+**日本語の説明**：{q_data['description_jp']}
 """
             )
+    else:
+        st.info("選好答案之後，請先按「送出答案」，想換題再按「下一題」。")
