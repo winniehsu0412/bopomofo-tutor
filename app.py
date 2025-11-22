@@ -633,7 +633,7 @@ elif page == "📝 小測驗（選擇題）":
     # 下一題：重置題目並重新 rerun
     if next_q:
         st.session_state.quiz_state = make_question()
-        st.experimental_rerun()
+        st.rerun()
 
     # 判分與詳解
     if state.get("submitted", False):
